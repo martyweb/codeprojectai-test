@@ -18,6 +18,7 @@ HTTP_OK = 200
 BAD_URL = 404
 
 ## API urls
+URL_BASE_V1      = "http://{ip}:{port}/v1"
 URL_BASE_VISION      = "http://{ip}:{port}/v1/vision"
 URL_CUSTOM           = "/custom/{custom_model}"
 URL_OBJECT_DETECTION = "/detection"
@@ -25,6 +26,7 @@ URL_FACE_DETECTION   = "/face"
 URL_FACE_REGISTER    = "/face/register"
 URL_FACE_RECOGNIZE   = "/face/recognize"
 URL_FACE_LIST        = "/face/list"
+URL_CARTOONISE        = "/image/cartoonise"
 # URL_SCENE_RECOGNIZE = "/scene"
 
 
@@ -127,7 +129,7 @@ def process_image(
     if response.status_code == BAD_URL:
         raise CodeProjectAIException(f"Bad url supplied, url {url} raised error {BAD_URL}")
     else:
-        raise CodeProjectAIException(f"CodeProject.AI Server error: {response.status_code}")
+        raise CodeProjectAIException(f"CodeProject.AI Server error: {response.status_code} {url}")
 
 
 def get_stored_faces(url, timeout) -> List:
@@ -156,6 +158,7 @@ class CodeProjectAIVision:
         url_recognize: str    = "",
         url_register: str     = "",
         url_face_list: str    = "",
+        url_cartoonise: str    = "",
     ):
         self.port            = port
         self.timeout         = timeout
@@ -166,6 +169,7 @@ class CodeProjectAIVision:
         self._url_recognize  = self._url_base + url_recognize
         self._url_register   = self._url_base + url_register
         self._url_face_list  = self._url_base + url_face_list
+        self._url_cartoonise  = URL_BASE_V1.format(ip=ip, port=port) + url_cartoonise
 
     def detect(self):
         """Process image_bytes and detect."""
@@ -244,6 +248,36 @@ class CodeProjectAIScene(CodeProjectAIVision):
         del response["success"]
         return response
 """
+
+class CodeProjectAICartoonise(CodeProjectAIVision):
+    # Work with scenes
+
+    def __init__(
+        self,
+        ip: str = DEFAULT_IP,
+        port: int = DEFAULT_PORT,
+        timeout: int = DEFAULT_TIMEOUT,
+        min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+    ):
+        super().__init__(
+            ip=ip,
+            port=port,
+            timeout=timeout,
+            min_confidence=min_confidence,
+            url_cartoonise=URL_CARTOONISE
+        )
+
+    def cartoonise(self, image_bytes: bytes):
+        #Process image_bytes and detect.
+
+        response = process_image(
+            url=self._url_cartoonise,
+            image_bytes=image_bytes,
+            min_confidence=self.min_confidence,
+            timeout=self.timeout,
+        )
+        del response["success"]
+        return response
 
 class CodeProjectAIFace(CodeProjectAIVision):
     """Work with objects"""
